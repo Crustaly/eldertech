@@ -1,0 +1,113 @@
+import boto3
+import time
+from datetime import datetime, timedelta
+from botocore.exceptions import ClientError
+
+TABLE_NAME = "NomiData"
+REGION = "us-east-1"
+TTL_HOURS = 3
+
+# --- AWS CONNECTION ---
+dynamodb = boto3.client("dynamodb", region_name=REGION)
+resource = boto3.resource("dynamodb", region_name=REGION)
+
+# --- 1. CREATE TABLE (if not exists) ---
+def create_table_if_not_exists():
+    try:
+        tables = dynamodb.list_tables()["TableNames"]
+        if TABLE_NAME in tables:
+            print(f"✅ Table '{TABLE_NAME}' already exists.")
+            return
+        print(f"🚀 Creating table '{TABLE_NAME}'...")
+        dynamodb.create_table(
+            TableName=TABLE_NAME,
+            KeySchema=[
+                {"AttributeName": "sensor_type", "KeyType": "HASH"},
+                {"AttributeName": "timestamp", "KeyType": "RANGE"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "sensor_type", "AttributeType": "S"},
+                {"AttributeName": "timestamp", "AttributeType": "S"},
+            ],
+            BillingMode="PAY_PER_REQUEST",
+        )
+        waiter = dynamodb.get_waiter("table_exists")
+        waiter.wait(TableName=TABLE_NAME)
+        print("✅ Table created and active.")
+    except ClientError as e:
+        print("❌ Error creating table:", e)
+
+# --- 2. ENABLE TTL ---
+def enable_ttl():
+    try:
+        dynamodb.update_time_to_live(
+            TableName=TABLE_NAME,
+            TimeToLiveSpecification={"Enabled": True, "AttributeName": "expire_at"},
+        )
+        print("🕒 TTL enabled (3 hours).")
+    except Exception:
+        print("TTL may already be enabled — continuing...")
+
+# --- 3. POPULATE SAMPLE DATA ---
+def populate_sample_data():
+    table = resource.Table(TABLE_NAME)
+    now = datetime.utcnow()
+
+    continuous = [
+        ("heart_rate", "bpm", 60, 95),
+        ("oxygen", "%", 95, 100),
+        ("temp_humidity", "C/%", 25, 30),
+    ]
+    events = [
+        ("eating", [1, 2, 3]),
+        ("meds", [1]),
+        ("fall_detector", ["None", "Fall Detected"]),
+        ("sleep", [5, 6, 7, 8]),
+    ]
+
+    print("🧠 Uploading 3 days of sample integer data...")
+    for d in range(3):
+        day = now - timedelta(days=d)
+        day_str = day.strftime("%Y-%m-%d")
+
+        # Daily event sensors
+        for name, vals in events:
+            v = vals[d % len(vals)]
+            # Convert text events to 0/1 (for falls etc.)
+            if isinstance(v, str):
+                v = 1 if "Fall" in v else 0
+            item = {
+                "sensor_type": name,
+                "timestamp": day_str,
+                "count": int(v),
+            }
+            table.put_item(Item=item)
+
+        # Continuous sensors
+        for minutes in range(0, 60, 10):
+            ts = (day + timedelta(hours=10, minutes=minutes)).isoformat()
+            for name, unit, lo, hi in continuous:
+                val = int(lo + (hi - lo) * 0.3)  # integer only
+                item = {
+                    "sensor_type": name,
+                    "timestamp": ts,
+                    "value": val,
+                    "metadata": {"unit": unit},
+                    "expire_at": int(time.time()) + TTL_HOURS * 3600,
+                }
+                table.put_item(Item=item)
+    print("✅ Sample integer data uploaded!")
+
+# --- 4. VERIFY ---
+def show_preview():
+    table = resource.Table(TABLE_NAME)
+    response = table.scan(Limit=10)
+    print("\n📊 Preview:")
+    for i in response["Items"]:
+        print(i)
+
+if __name__ == "__main__":
+    create_table_if_not_exists()
+    enable_ttl()
+    populate_sample_data()
+    show_preview()
