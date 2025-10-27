@@ -1,41 +1,127 @@
 import React from 'react';
+import { useEffect, useState } from "react";
+import mockData from "./mockdata.json";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // Mock data for the charts
-const heartRateData = [
-  { time: '6:00 AM', value: 72 },
-  { time: '8:00 AM', value: 75 },
-  { time: '10:00 AM', value: 78 },
-  { time: '12:00 PM', value: 82 },
-  { time: '2:00 PM', value: 80 },
-  { time: '4:00 PM', value: 76 },
-  { time: '6:00 PM', value: 74 },
-  { time: '8:00 PM', value: 70 },
-];
+// const heartRateData = [
+//   { time: '6:00 AM', value: 72 },
+//   { time: '8:00 AM', value: 75 },
+//   { time: '10:00 AM', value: 78 },
+//   { time: '12:00 PM', value: 82 },
+//   { time: '2:00 PM', value: 80 },
+//   { time: '4:00 PM', value: 76 },
+//   { time: '6:00 PM', value: 74 },
+//   { time: '8:00 PM', value: 70 },
+// ];
 
-const oxygenData = [
-  { time: '6:00 AM', value: 98 },
-  { time: '8:00 AM', value: 97 },
-  { time: '10:00 AM', value: 99 },
-  { time: '12:00 PM', value: 98 },
-  { time: '2:00 PM', value: 97 },
-  { time: '4:00 PM', value: 98 },
-  { time: '6:00 PM', value: 99 },
-  { time: '8:00 PM', value: 98 },
-];
+// const oxygenData = [
+//   { time: '6:00 AM', value: 98 },
+//   { time: '8:00 AM', value: 97 },
+//   { time: '10:00 AM', value: 99 },
+//   { time: '12:00 PM', value: 98 },
+//   { time: '2:00 PM', value: 97 },
+//   { time: '4:00 PM', value: 98 },
+//   { time: '6:00 PM', value: 99 },
+//   { time: '8:00 PM', value: 98 },
+// ];
 
-const temperatureData = [
-  { time: '6:00 AM', value: 98.2 },
-  { time: '8:00 AM', value: 98.4 },
-  { time: '10:00 AM', value: 98.6 },
-  { time: '12:00 PM', value: 98.3 },
-  { time: '2:00 PM', value: 98.5 },
-  { time: '4:00 PM', value: 98.4 },
-  { time: '6:00 PM', value: 98.2 },
-  { time: '8:00 PM', value: 98.1 },
-];
+// const temperatureData = [
+//   { time: '6:00 AM', value: 98.2 },
+//   { time: '8:00 AM', value: 98.4 },
+//   { time: '10:00 AM', value: 98.6 },
+//   { time: '12:00 PM', value: 98.3 },
+//   { time: '2:00 PM', value: 98.5 },
+//   { time: '4:00 PM', value: 98.4 },
+//   { time: '6:00 PM', value: 98.2 },
+//   { time: '8:00 PM', value: 98.1 },
+// ];
+
+
+
 
 function App() {
+  const [sensorData, setSensorData] = useState([]);
+  const [aiSummary, setAiSummary] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [heartRateData, setHeartRateData] = useState([]);
+  const [oxygenData, setOxygenData] = useState([]);
+  const [temperatureData, setTemperatureData] = useState([]);
+  
+  // Fetch data from FastAPI backend
+  // Fetch data from FastAPI backend
+useEffect(() => {
+  const fetchAndAnalyze = async () => {
+    try {
+      // 1️⃣ Pull latest Dynamo data
+      // const res = await fetch("http://127.0.0.1:8000/data");
+      // const data = await res.json();
+      const data = mockData;
+      setSensorData(data);
+
+      // 2️⃣ Split data into categories for charts
+      // 🩸 Heart Rate
+const heartData = data
+.filter(d => d.sensor_type === "heart_rate" && !isNaN(Number(d.value)))
+.map(d => ({
+  time: new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  value: Number(d.value)
+}));
+
+// 💨 Oxygen
+const oxygen = data
+.filter(d => d.sensor_type === "oxygen" && !isNaN(Number(d.value)))
+.map(d => ({
+  time: new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  value: Number(d.value)
+}));
+
+// 🌡️ Temperature
+const temp = data
+.filter(d => d.sensor_type === "temp_humidity")
+.map(d => {
+  const match = /([\d.]+)°C/.exec(d.value);
+  const val = match ? parseFloat(match[1]) : null;
+  return {
+    time: new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    value: val
+  };
+})
+.filter(d => typeof d.value === "number" && !isNaN(d.value));
+
+      setHeartRateData(heartData);
+      setOxygenData(oxygen);
+      setTemperatureData(temp);
+
+      // 3️⃣ Send to FastAPI → NVIDIA NIM for reasoning
+      const analyzeRes = await fetch("http://127.0.0.1:8000/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          posture: "sitting",
+          pill_status: "closed",
+          sensor_data: data,
+        }),
+      });
+
+      const result = await analyzeRes.json();
+      setAiSummary(result);
+    } catch (err) {
+      console.error("Error syncing data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Run immediately
+  fetchAndAnalyze();
+
+  // Repeat every 30 seconds
+  const interval = setInterval(fetchAndAnalyze, 30000);
+  return () => clearInterval(interval);
+}, []);
+
+  
   return (
     <div className="min-h-screen bg-transparent">
     

@@ -1,0 +1,75 @@
+[
+    {
+      "sensor_type": "heart_rate",
+      "value": 72,
+      "unit": "bpm",
+      "timestamp": "2025-10-27T06:00:00Z"
+    },
+    {
+      "sensor_type": "heart_rate",
+      "value": 78,
+      "unit": "bpm",
+      "timestamp": "2025-10-27T08:00:00Z"
+    },
+    {
+      "sensor_type": "heart_rate",
+      "value": 82,
+      "unit": "bpm",
+      "timestamp": "2025-10-27T10:00:00Z"
+    },
+    {
+      "sensor_type": "heart_rate",
+      "value": 76,
+      "unit": "bpm",
+      "timestamp": "2025-10-27T12:00:00Z"
+    },
+    {
+      "sensor_type": "oxygen",
+      "value": 98,
+      "unit": "%",
+      "timestamp": "2025-10-27T06:00:00Z"
+    },
+    {
+      "sensor_type": "oxygen",
+      "value": 97,
+      "unit": "%",
+      "timestamp": "2025-10-27T08:00:00Z"
+    },
+    {
+      "sensor_type": "oxygen",
+      "value": 99,
+      "unit": "%",
+      "timestamp": "2025-10-27T10:00:00Z"
+    },
+    {
+      "sensor_type": "oxygen",
+      "value": 98,
+      "unit": "%",
+      "timestamp": "2025-10-27T12:00:00Z"
+    },
+    {
+      "sensor_type": "temp_humidity",
+      "value": "25°C / 48%",
+      "unit": "C/%",
+      "timestamp": "2025-10-27T06:00:00Z"
+    },
+    {
+      "sensor_type": "temp_humidity",
+      "value": "25.5°C / 50%",
+      "unit": "C/%",
+      "timestamp": "2025-10-27T08:00:00Z"
+    },
+    {
+      "sensor_type": "temp_humidity",
+      "value": "26.1°C / 46%",
+      "unit": "C/%",
+      "timestamp": "2025-10-27T10:00:00Z"
+    },
+    {
+      "sensor_type": "temp_humidity",
+      "value": "25.8°C / 45%",
+      "unit": "C/%",
+      "timestamp": "2025-10-27T12:00:00Z"
+    }
+  ]
+  

@@ -125,6 +125,19 @@ class SensorBundle(BaseModel):
     pill_status: str = "closed"
     sensor_data: list = []
 
+import requests
+
+@app.get("/data")
+def get_sensor_data():
+    """Fetch raw sensor data directly from your DynamoDB API Gateway endpoint."""
+    try:
+        response = requests.get("https://96jal8jxw4.execute-api.us-east-1.amazonaws.com/default/dynamoread")
+        response.raise_for_status()
+        data = response.json()
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching Dynamo data: {e}")
+
 
 @app.post("/analyze")
 def analyze(bundle: SensorBundle):
