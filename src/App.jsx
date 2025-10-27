@@ -37,78 +37,25 @@ const temperatureData = [
 
 function App() {
   return (
-    <div className="min-h-screen bg-white">
-      {/* Top Header Bar */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <h1 className="text-xl font-bold text-black">Nomi Wellness</h1>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-              </svg>
-            </div>
-            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="relative">
-              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                <svg className="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                </svg>
-              </div>
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
-            </div>
-            <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-transparent">
+    
 
-      {/* Navigation Bar */}
-      <nav className="bg-white border-b border-gray-200 px-6 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-8">
-            <button className="px-4 py-2 bg-gray-100 text-black rounded-lg font-medium">Dashboard</button>
-            <button className="px-4 py-2 text-gray-600 hover:text-black">Health</button>
-            <button className="px-4 py-2 text-gray-600 hover:text-black">Medication</button>
-            <button className="px-4 py-2 text-gray-600 hover:text-black">Activities</button>
-            <button className="px-4 py-2 text-gray-600 hover:text-black">Reports</button>
-          </div>
-          <div className="flex items-center space-x-3">
-            <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
-              <svg className="w-4 h-4 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-              Export Data
-            </button>
-            <button className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800">
-              <svg className="w-4 h-4 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-              </svg>
-              Add Reading
-            </button>
-          </div>
-        </div>
-      </nav>
 
       {/* Hero Section */}
       <section className="px-6 py-8">
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-8 text-white relative overflow-hidden">
+      <div className="bg-gradient-to-r from-[#7BA05B] to-[#99B184] rounded-2xl p-8 text-white relative overflow-hidden">
+
           <div className="absolute top-4 left-6">
-            <span className="bg-purple-500 text-white px-3 py-1 rounded-full text-sm font-medium">Premium</span>
+
           </div>
           <div className="relative z-10">
             <h2 className="text-4xl font-bold mb-4">Meet Nomi — The sensor network that truly understands wellness</h2>
             <p className="text-xl mb-6 opacity-90">Monitor Edna's health with comprehensive wellness tracking and insights.</p>
             <div className="flex space-x-4">
-              <button className="px-6 py-3 bg-white text-purple-600 rounded-lg font-medium hover:bg-gray-100">
+              <button className="px-6 py-3 bg-white text-[#3B6E0E] rounded-lg font-medium hover:bg-gray-100">
                 View Reports
               </button>
-              <button className="px-6 py-3 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-400">
+              <button className="px-6 py-3 bg-[#3B6E0E] text-white rounded-lg font-medium hover:bg-[#2f590b]">
                 Take a Tour
               </button>
             </div>
