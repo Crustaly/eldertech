@@ -19,8 +19,6 @@ NIM_ENDPOINT = os.getenv("NIM_ENDPOINT")
 # -------------------------------
 def build_nomiprompt(sensor_data, posture=None, pill_status=None):
     readable = json.dumps(sensor_data, indent=2)
-
-    # detect if this looks like daily logs or vitals
     sensor_types = [d.get("sensor_type", "") for d in sensor_data]
     if any(s in sensor_types for s in ["eating", "sleep", "fall_detector", "meds"]):
         # 💤 Daily summary mode
