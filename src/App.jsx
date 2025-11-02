@@ -2,6 +2,9 @@ import React from 'react';
 import { useEffect, useState } from "react";
 import mockData from "./mockdata.json";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import VitalsDashboard from "./components/VitalsDashboard";
+
+
 
 // Mock data for the charts
 // const heartRateData = [
@@ -50,77 +53,74 @@ function App() {
   
   // Fetch data from FastAPI backend
   // Fetch data from FastAPI backend
-useEffect(() => {
-  const fetchAndAnalyze = async () => {
-    try {
-      // 1️⃣ Pull latest Dynamo data
-      // const res = await fetch("http://127.0.0.1:8000/data");
-      // const data = await res.json();
-      const data = mockData;
-      setSensorData(data);
-
-      // 2️⃣ Split data into categories for charts
-      // 🩸 Heart Rate
-const heartData = data
-.filter(d => d.sensor_type === "heart_rate" && !isNaN(Number(d.value)))
-.map(d => ({
-  time: new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-  value: Number(d.value)
-}));
-
-// 💨 Oxygen
-const oxygen = data
-.filter(d => d.sensor_type === "oxygen" && !isNaN(Number(d.value)))
-.map(d => ({
-  time: new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-  value: Number(d.value)
-}));
-
-// 🌡️ Temperature
-const temp = data
-.filter(d => d.sensor_type === "temp_humidity")
-.map(d => {
-  const match = /([\d.]+)°C/.exec(d.value);
-  const val = match ? parseFloat(match[1]) : null;
-  return {
-    time: new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    value: val
-  };
-})
-.filter(d => typeof d.value === "number" && !isNaN(d.value));
-
-      setHeartRateData(heartData);
-      setOxygenData(oxygen);
-      setTemperatureData(temp);
-
-      // 3️⃣ Send to FastAPI → NVIDIA NIM for reasoning
-      const analyzeRes = await fetch("http://127.0.0.1:8000/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          posture: "sitting",
-          pill_status: "closed",
-          sensor_data: data,
-        }),
-      });
-
-      const result = await analyzeRes.json();
-      setAiSummary(result);
-    } catch (err) {
-      console.error("Error syncing data:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Run immediately
-  fetchAndAnalyze();
-
-  // Repeat every 30 seconds
-  const interval = setInterval(fetchAndAnalyze, 30000);
-  return () => clearInterval(interval);
-}, []);
-
+  useEffect(() => {
+    const fetchAndAnalyze = async () => {
+      try {
+        // 1️⃣ Pull latest Dynamo data
+        const data = mockData;
+        setSensorData(data);
+  
+        // 2️⃣ Split data into categories for charts
+        const heartData = data
+          .filter(d => d.sensor_type === "heart_rate" && !isNaN(Number(d.value)))
+          .map(d => ({
+            time: new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            value: Number(d.value)
+          }));
+  
+        const oxygen = data
+          .filter(d => d.sensor_type === "oxygen" && !isNaN(Number(d.value)))
+          .map(d => ({
+            time: new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            value: Number(d.value)
+          }));
+  
+        const temp = data
+          .filter(d => d.sensor_type === "temp_humidity")
+          .map(d => {
+            const match = /([\d.]+)°C/.exec(d.value);
+            const val = match ? parseFloat(match[1]) : null;
+            return {
+              time: new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              value: val
+            };
+          })
+          .filter(d => typeof d.value === "number" && !isNaN(d.value));
+  
+        setHeartRateData(heartData);
+        setOxygenData(oxygen);
+        setTemperatureData(temp);
+  
+        // 3️⃣ Send to FastAPI → NVIDIA NIM for reasoning
+        const analyzeRes = await fetch("http://127.0.0.1:8000/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            posture: "sitting",
+            pill_status: "closed",
+            sensor_data: data,
+          }),
+        });
+  
+        const result = await analyzeRes.json();
+        setAiSummary(result);
+  
+      } catch (err) {
+        console.error("Error syncing data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    // ✅ Run immediately
+    fetchAndAnalyze();
+  
+    // ✅ Repeat every 30 seconds
+    const interval = setInterval(fetchAndAnalyze, 30000);
+    return () => clearInterval(interval);
+  
+  }, []); // <— Don’t forget dependency array
+  
   
   return (
     <div className="min-h-screen bg-transparent">

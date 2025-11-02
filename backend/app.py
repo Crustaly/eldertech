@@ -4,6 +4,11 @@ import os
 import json
 import requests
 from dotenv import load_dotenv
+import boto3
+from botocore.exceptions import ClientError
+import os
+
+
 
 # 🔹 Load environment variables
 load_dotenv()
@@ -16,6 +21,15 @@ NIM_ENDPOINT = os.getenv("NIM_ENDPOINT")
 # 🔹 Your DynamoDB API Gateway endpoint
 DYNAMO_API_URL = "https://96jal8jxw4.execute-api.us-east-1.amazonaws.com/default/dynamoread"
 
+
+
+# Initialize SNS
+sns_client = boto3.client(
+    "sns",
+    region_name="us-east-1",  # or whatever region you used
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+)
 
 # -------------------------------
 # 🔹 Prompt Builder
@@ -68,6 +82,19 @@ Return output in strict JSON format:
 }}
 """
     return prompt
+
+
+def send_sns_alert(message, subject="NOMI Alert"):
+    """Send an SMS alert via Amazon SNS"""
+    try:
+        response = sns_client.publish(
+            TopicArn=SNS_TOPIC_ARN,
+            Message=message,
+            Subject=subject,
+        )
+        print("✅ SNS message sent:", response["MessageId"])
+    except ClientError as e:
+        print("❌ SNS Error:", e)
 
 
 # -------------------------------
@@ -137,32 +164,62 @@ def get_sensor_data():
         return data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching Dynamo data: {e}")
+    
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+def send_email_alert(subject, message):
+    sender = os.getenv("EMAIL_SENDER")
+    recipient = os.getenv("EMAIL_RECIPIENT")
+    password = os.getenv("EMAIL_PASSWORD")
+
+    if not all([sender, recipient, password]):
+        print("⚠️ Email config missing in .env")
+        return
+
+    try:
+        msg = MIMEMultipart()
+        msg["From"] = sender
+        msg["To"] = recipient
+        msg["Subject"] = subject
+
+        msg.attach(MIMEText(message, "plain"))
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(sender, password)
+            server.send_message(msg)
+        print("✅ Email alert sent successfully!")
+    except Exception as e:
+        print(f"❌ Email send failed: {e}")
 
 
 @app.post("/analyze")
 def analyze(bundle: SensorBundle):
     """
-    If no sensor_data is provided, automatically pulls latest data from DynamoDB
-    and runs reasoning on it.
+    Analyze sensor data from request or DynamoDB.
+    Uses NVIDIA NIM for reasoning and triggers SMS alerts via SNS when needed.
     """
     try:
-        # If no sensor data given, fetch from Dynamo
+        # ---- 1️⃣ Get data source ----
         if not bundle.sensor_data:
+            DYNAMO_API_URL = os.getenv("DYNAMO_API_URL", "https://96jal8jxw4.execute-api.us-east-1.amazonaws.com/default/dynamoread")
             dynamo_response = requests.get(DYNAMO_API_URL)
             dynamo_response.raise_for_status()
             bundle.sensor_data = dynamo_response.json()
 
+        # ---- 2️⃣ Build prompt for NIM ----
         prompt = build_nomiprompt(
             sensor_data=bundle.sensor_data,
             posture=bundle.posture,
             pill_status=bundle.pill_status
         )
 
+        # ---- 3️⃣ Prepare and send to NVIDIA NIM ----
         headers = {
             "Authorization": f"Bearer {NGC_API_KEY}",
             "Content-Type": "application/json"
         }
-
         payload = {
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.5,
@@ -171,7 +228,33 @@ def analyze(bundle: SensorBundle):
 
         response = requests.post(NIM_ENDPOINT, headers=headers, json=payload)
         response.raise_for_status()
-        return response.json()
+        result = response.json()
+
+        # ---- 4️⃣ Extract model text ----
+        summary_text = result["choices"][0]["message"]["content"]
+
+        # ---- 5️⃣ Optional: Try to parse JSON block from the LLM output ----
+        parsed_output = {}
+        try:
+            start = summary_text.find("{")
+            end = summary_text.rfind("}") + 1
+            if start != -1 and end != -1:
+                parsed_output = json.loads(summary_text[start:end])
+        except Exception:
+            parsed_output = {"summary": summary_text, "recommendation": "", "reasoning": ""}
+
+        # ---- 6️⃣ Trigger alerts if concerning content detected ----
+        keywords = ["fall", "unconscious", "critical", "abnormal", "emergency", "not breathing", "low oxygen"]
+        if any(k in summary_text.lower() for k in keywords):
+            alert_msg = f"🚨 NOMI Alert:\n{parsed_output.get('summary', summary_text)}\n\nRecommendation: {parsed_output.get('recommendation', '')}"
+            send_email_alert("🚨 Emergency Detected by NOMI", alert_msg)
+
+        # ---- 7️⃣ Return structured result ----
+        return {
+            "summary": parsed_output.get("summary", summary_text),
+            "recommendation": parsed_output.get("recommendation", ""),
+            "reasoning": parsed_output.get("reasoning", ""),
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to analyze data: {e}")
